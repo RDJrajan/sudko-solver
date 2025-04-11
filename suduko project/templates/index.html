@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Solver Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --primary-light: #e6f3ff;
+            --secondary: #f8f9fa;
+            --success: #28a745;
+            --danger: #dc3545;
+            --dark: #343a40;
+            --light: #f8f9fa;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .sudoku-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+        
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            gap: 1px;
+            margin: 0 auto;
+            width: fit-content;
+        }
+        
+        .cell {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 500;
+            border: 1px solid #ddd;
+            background-color: white;
+            transition: all 0.2s;
+        }
+        
+        .cell:focus {
+            outline: none;
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+        }
+        
+        .cell:nth-child(3n) {
+            border-right: 2px solid var(--primary);
+        }
+        
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5a8a;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        #result {
+            text-align: center;
+            font-size: 1.1rem;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .file-label:hover {
+            background-color: #5a6268;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 1.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn-group {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sudoku Solver Pro</h1>
+        <p>Solve any Sudoku puzzle instantly</p>
+    </header>
+    
+    <div class="container">
+        <div class="sudoku-container">
+            <div class="sudoku-grid" id="grid"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="btn-group">
+                <button id="solve-btn" class="btn btn-primary">Solve Puzzle</button>
+                <button id="clear-btn" class="btn btn-danger">Clear Grid</button>
+            </div>
+            
+            <select id="sample-select">
+                <option value="">Select Sample Puzzle</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+            
+            <button id="load-sample" class="btn btn-success">Load Puzzle</button>
+            
+            <input type="file" id="file-input" class="file-input" accept="image/*">
+            <label for="file-input" class="file-label">Upload Image</label>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+    
+    <footer>
+        <p>© 2023 Sudoku Solver Pro | Algorithm Visualization Tool</p>
+    </footer>
+
+    <script>
+        const gridContainer = document.getElementById('grid');
+        const solveBtn = document.getElementById('solve-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const sampleSelect = document.getElementById('sample-select');
+        const loadSampleBtn = document.getElementById('load-sample');
+        const fileInput = document.getElementById('file-input');
+        const resultDiv = document.getElementById('result');
+        
+        // Create Sudoku grid
+        const cells = [];
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                const cell = document.createElement('input');
+                cell.className = 'cell';
+                cell.type = 'text';
+                cell.maxLength = 1;
+                cell.dataset.row = i;
+                cell.dataset.col = j;
+                
+                // Only allow numbers 1-9
+                cell.addEventListener('input', (e) => {
+                    if (!/^[1-9]$/.test(e.target.value)) {
+                        e.target.value = '';
+                    }
+                });
+                
+                cells.push(cell);
+                gridContainer.appendChild(cell);
+            }
+        }
+        
+        // Solve button
+        solveBtn.addEventListener('click', async () => {
+            const grid = [];
+            for (let i = 0; i < 9; i++) {
+                grid[i] = [];
+                for (let j = 0; j < 9; j++) {
+                    grid[i][j] = cells[i * 9 + j].value ? parseInt(cells[i * 9 + j].value) : 0;
+                }
+            }
+            
+            try {
+                const response = await fetch('/solve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ grid }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.solved) {
+                    // Display solution
+                    for (let i = 0; i < 9; i++) {
+                        for (let j = 0; j < 9; j++) {
+                            cells[i * 9 + j].value = data.solution[i][j];
+                        }
+                    }
+                    resultDiv.textContent = `Solved in ${data.time.toFixed(4)} seconds`;
+                    resultDiv.className = 'success';
+                } else {
+                    resultDiv.textContent = 'No solution exists for this puzzle';
+                    resultDiv.className = 'error';
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.className = 'error';
+            }
+        });
+        
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            cells.forEach(cell => cell.value = '');
+            resultDiv.textContent = '';
+            resultDiv.className = '';
+        });
+        
+        // Load sample puzzle
+        loadSampleBtn.addEventListener('click', async () => {
+            const difficulty = sampleSelect.value;
+            if (!difficulty) return;
+            
+            try {
+                const response = await fetch(`/sample/${difficulty}`);
+                const data = await response.json();
+                
+                // Clear grid first
+                cells.forEach(cell => cell.value = '');
+                
+                // Load sample puzzle
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        if (data.puzzle[i][j] !== 0) {
+                            cells[i * 9 + j].value = data.puzzle[i][j];
+                        }
+                    }
+                }
+                
+                resultDiv.textContent = `Loaded ${difficulty} puzzle`;
+                resultDiv.className = 'info';
+            } catch (error) {
+                resultDiv.textContent = 'Error loading sample puzzle';
+                resultDiv.className = 'error';
+            }
+        });
+        
+        // Handle image upload
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.grid) {
+                    // Clear grid first
+                    cells.forEach(cell => cell.value = '');
+                    
+                    // Load puzzle from image
+                    for (let i = 0; i < 9; i++) {
+                        for (let j = 0; j < 9; j++) {
+                            if (data.grid[i][j] !== 0) {
+                                cells[i * 9 + j].value = data.grid[i][j];
+                            }
+                        }
+                    }
+                    
+                    resultDiv.textContent = 'Puzzle loaded from image';
+                    resultDiv.className = 'info';
+                } else if (data.error) {
+                    resultDiv.textContent = data.error;
+                    resultDiv.className = 'error';
+                }
+            } catch (error) {
+                resultDiv.textContent = 'Error processing image';
+                resultDiv.className = 'error';
+            }
+        });
+    </script>
+</body>
+</html>
